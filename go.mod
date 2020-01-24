@@ -1,4 +1,4 @@
-module github.com/keks/eth2dist
+module github.com/LeastAuthority/eth2dist
 
 go 1.13
 

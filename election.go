@@ -1,4 +1,4 @@
-package eth2dist // import "github.com/keks/eth2dist"
+package eth2dist // import "github.com/LeastAuthority/eth2dist"
 
 import (
 	"crypto/sha256"
