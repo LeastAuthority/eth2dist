@@ -11,6 +11,15 @@ import (
 	"github.com/montanaflynn/stats"
 )
 
+// parameters
+var (
+	setSizes     = []int{8, 32}
+	sampleCounts = []int{1024, 32 * 1024}
+)
+
+// UniformValudatorsState returns a state with total effective balance
+// `total` and n validators. The total balance is evenly allocated to the
+// validators.
 func UniformValidatorsState(total, n int) State {
 	assert(total%n == 0)
 
@@ -19,14 +28,6 @@ func UniformValidatorsState(total, n int) State {
 		state.Validators[i].EffectiveBalance = total / n
 	}
 	return state
-}
-
-func seq(from, to int) []ValidatorIndex {
-	out := make([]ValidatorIndex, to-from)
-	for i := from; i < to-from; i++ {
-		out[i-from] = ValidatorIndex(i)
-	}
-	return out
 }
 
 func getTest(setSize, samples int) func(*testing.T) {
@@ -93,7 +94,7 @@ func getTest(setSize, samples int) func(*testing.T) {
 		)
 
 		for j := 0; j < cores; j++ {
-			for i := range counts {
+			for i := range counts[j] {
 				fcnts[i] += float64(counts[j][i])
 				rfcnts[i] += float64(rcounts[j][i])
 			}
@@ -116,9 +117,17 @@ func getTest(setSize, samples int) func(*testing.T) {
 }
 
 func TestComputeProposerIndex(t *testing.T) {
-	for _, setSize := range []int{32} {
-		for _, samples := range []int{16 * 1024} {
+	for _, setSize := range setSizes {
+		for _, samples := range sampleCounts {
 			t.Run(fmt.Sprintf("sz:%d/smpls:%d", setSize, samples), getTest(setSize, samples))
 		}
 	}
+}
+
+func seq(from, to int) []ValidatorIndex {
+	out := make([]ValidatorIndex, to-from)
+	for i := from; i < to-from; i++ {
+		out[i-from] = ValidatorIndex(i)
+	}
+	return out
 }

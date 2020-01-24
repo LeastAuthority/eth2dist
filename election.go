@@ -1,9 +1,11 @@
 package eth2dist // import "github.com/LeastAuthority/eth2dist"
 
 import (
-	"crypto/sha256"
-	"encoding/json"
 	"fmt"
+
+	"crypto/sha256"
+	//"github.com/codahale/blake2"
+	//"lukechampine.com/blake3"
 )
 
 /*
@@ -54,11 +56,26 @@ const (
 func ComputeShuffledIndex(idx ValidatorIndex, idxCnt uint64, seed [32]byte) ValidatorIndex {
 	assert(uint64(idx) < idxCnt)
 
+	// buf is used as a hashing buffer.
+	// initially tests took ages so I optimized this code a bit.
+	// it's not perfectly avoiding collisions, but I think that
+	// is okay for testing uniformity.
+	// buf layout: b32:seed | b1:round# | b1: sel
+	// sel is needed to get different hashes. in the real protocol,
+	// we hash in some other value but that is not too important here.
+	// writing to buffers directly instead of doing lazy JSON encoding
+	// or fprint-ing into the hash resulted in 10x performance boost.
+	var buf = make([]byte, len(seed)+2)
+	copy(buf, seed[:])
+
 	for round := 0; round < ShuffleRoundCount; round++ {
-		pivot := uint64hash(seed, round)
+		buf[32] = byte(round)
+		buf[33] = 0
+		pivot := uint64hash(buf)
 		flip := ValidatorIndex((pivot + idxCnt - uint64(idx)) % idxCnt)
 		pos := max(idx, flip)
-		src := hash(seed, round, pos/256)
+		buf[33] = 1
+		src := hash(buf)
 		bite := src[(pos%256)/8]
 		byt := (bite >> (pos % 8)) % 2
 		if byt == 1 {
@@ -72,13 +89,25 @@ func ComputeProposerIndex(state State, indices []ValidatorIndex, seed [32]byte) 
 	assert(len(indices) > 0)
 
 	const max = 255
-	var i = 0
+	var (
+		i      = 0
+		hashes = make([][]byte, 0, 500) // allocate a lot of memory up front
+		buf    = make([]byte, len(seed)+1)
+	)
+
+	copy(buf, seed[:])
 
 	for {
+		// only compute the hash if we haven't done so yet
+		if i/32 > len(hashes)-1 {
+			buf[32] = byte(i / 32)
+			hashes = append(hashes, hash(buf))
+		}
+
 		var (
 			shufIdx = ComputeShuffledIndex(ValidatorIndex(i%len(indices)), uint64(len(indices)), seed)
 			candIdx = indices[shufIdx]
-			r       = hash(seed, i/32)[i%32]
+			r       = hashes[i/32][i%32]
 			eff     = state.Validators[candIdx].EffectiveBalance
 		)
 		if eff*max >= MaxEffectiveBalance*int(r) {
@@ -108,10 +137,10 @@ func max(l, r ValidatorIndex) ValidatorIndex {
 	return r
 }
 
-func uint64hash(vs ...interface{}) uint64 {
+func uint64hash(buf []byte) uint64 {
 	var (
 		out uint64
-		h   = hash(vs...)
+		h   = hash(buf)
 	)
 
 	for i := 0; i < 8; i++ {
@@ -122,14 +151,15 @@ func uint64hash(vs ...interface{}) uint64 {
 	return out
 }
 
-func hash(vs ...interface{}) []byte {
+//var blakeCfg = blake2.Config{Size: 32}
+
+func hash(buf []byte) []byte {
+	//h := blake2.NewBlake2B()
+	//h := blake2.New(&blakeCfg)
 	h := sha256.New()
-	e := json.NewEncoder(h)
+	//h := blake3.New(32, nil)
+	//e := json.NewEncoder(h)
 
-	for _, v := range vs {
-		err := e.Encode(v)
-		assertf(err == nil, "encode error: %q", err)
-	}
-
+	h.Write(buf)
 	return h.Sum(nil)
 }

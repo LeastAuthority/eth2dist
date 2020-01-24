@@ -1,2 +1,6 @@
+github.com/codahale/blake2 v0.0.0-20150924215134-8d10d0420cbf h1:5ZeQB3mThuz5C2MSER6T5GdtXTF9CMMk42F9BOyRsEQ=
+github.com/codahale/blake2 v0.0.0-20150924215134-8d10d0420cbf/go.mod h1:BO2rLUAZMrpgh6GBVKi0Gjdqw2MgCtJrtmUdDeZRKjY=
 github.com/montanaflynn/stats v0.5.0 h1:2EkzeTSqBB4V4bJwWrt5gIIrZmpJBcoIRGS2kWLgzmk=
 github.com/montanaflynn/stats v0.5.0/go.mod h1:wL8QJuTMNUDYhXwkmfOly8iTdp5TEcJFWZD2D7SIkUc=
+lukechampine.com/blake3 v1.0.0 h1:dNj1NVD7SLgkU7dykKjmmOSOTTx7ZmxnDyUyvxnQP2Q=
+lukechampine.com/blake3 v1.0.0/go.mod h1:e0XQzEQp6LtbXBhzYxRoh6s3kcmX+fMMg8sC9VgWloQ=
