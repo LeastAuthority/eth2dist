@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"sync"
 	"testing"
+	"math"
 
 	"github.com/montanaflynn/stats"
 )
@@ -28,6 +29,17 @@ func UniformValidatorsState(total, n int) State {
 		state.Validators[i].EffectiveBalance = total / n
 	}
 	return state
+}
+
+// Null hypothesis, there is no statistically significant difference between
+// observed sample distribution and expected random selection.
+func ChaiSquaredTest(a []float64, samples int) float64 {
+	expected := float64(samples / len(a))
+	sum := 0.0
+	for i := 0; i < len(a); i++{
+		sum += math.Pow(a[i] - expected, 2) / float64(expected)
+	}
+	return sum
 }
 
 func getTest(setSize, samples int) func(*testing.T) {
@@ -107,11 +119,41 @@ func getTest(setSize, samples int) func(*testing.T) {
 		t.Log("mean:", mean, err)
 		stddev, err := stats.StandardDeviation(fcnts)
 		t.Log("stddev:", stddev, err)
+		chai := ChaiSquaredTest(fcnts, samples)
+		t.Log("chai real:", chai)
+		if len(fcnts) == 8 {
+			if chai < 14.07 {
+				t.Log("95 percent confident in null hypothesis")
+			} else {
+				t.Log("There is a statistical difference between observed and expected")
+			}
+		} else if len(fcnts) == 32 {
+			if chai < 43.77 {
+				t.Log("95 percent confident in null hypothesis")
+			} else {
+				t.Log("There is a statistical difference between observed and expected")
+			}			
+		}
 
 		rmean, err := stats.Mean(rfcnts)
 		t.Log("rmean:", rmean, err)
 		rstddev, err := stats.StandardDeviation(rfcnts)
 		t.Log("rstddev:", rstddev, err)
+		rchai := ChaiSquaredTest(rfcnts, samples)
+		t.Log("chai rand:", rchai)
+		if len(rfcnts) == 8 {
+			if rchai < 14.07 {
+				t.Log("95 percent confident in null hypothesis")
+			} else {
+				t.Log("There is a statistical difference between observed and expected")
+			}
+		} else if len(rfcnts) == 32 {
+			if rchai < 43.77 {
+				t.Log("95 percent confident in null hypothesis")
+			} else {
+				t.Log("There is a statistical difference between observed and expected")
+			}			
+		}
 	}
 
 }
